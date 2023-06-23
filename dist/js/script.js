@@ -209,39 +209,60 @@ document.addEventListener('DOMContentLoaded', () => {
     // однако если мы просто хотим создать элемент и в дальнейшем он нам не понадобится
     // нет необходимости помещать его в переменную, просто создаем, делаем нужные манипуляции и забываем про него
 
-    new MenuCard(
-        "img/tabs/vegy.jpg",
-        "vegy",
-        'Меню "Фитнес"',
-        'Меню "Фитнес" - это новый подход к приготовлению блюд: больше свежих овощей и фруктов. Продукт активных и здоровых людей. Это абсолютно новый продукт с оптимальной ценой и высоким качеством!',
-        9,
-        '.menu .container',
-        'menu__item'
-    ).render();
 
-    new MenuCard(
-        "img/tabs/elite.jpg",
-        "elite",
-        'Меню “Премиум”',
-        'В меню “Премиум” мы используем не только красивый дизайн упаковки, но и качественное исполнение блюд. Красная рыба, морепродукты, фрукты - ресторанное меню без похода в ресторан!',
-        21,
-        '.menu .container',
-        'menu__item'
-    ).render();
+    // функция которая помещает данные на страницу из базы данных
+    // fetch не реагирует на ошибки HTTP запросов 404, 500, 502 ...
+    // обрабатываем в ручную
+    // есть два свойства которые помогают в данном деле
+    // .ok .status (200, 404, 500 ...)
+    // нам понадобиться конструкция выбрасывающая новую ошибку throw new Error
 
-    new MenuCard(
-        "img/tabs/post.jpg",
-        "post",
-        'Меню "Постное"',
-        'Меню “Постное” - это тщательный подбор ингредиентов: полное отсутствие продуктов животного происхождения, молоко из миндаля, овса, кокоса или гречки, правильное количество белков за счет тофу и импортных вегетарианских стейков.',
-        14,
-        '.menu .container',
-        'menu__item'
-    ).render();
+    const getResource = async (url) => {
+        const res = await fetch(url);
 
-    // теперь убираем те карточки которые были прописаны в HTML вручную.
+        if (!res.ok) {
+            throw new Error(`Couldn't fetch ${url}, status ${res.status}`);
+        }
+        
+        return await res.json();
+    };
 
+    // ({img, altimg ...}) это мы деструктуризуем объект вытаскиваем из него свойства
+    getResource('http://localhost:3000/menu')
+        .then(data => {
+            data.forEach(({img, altimg, title, descr, price}) => {
+                new MenuCard(img, altimg, title, descr, price, '.menu .container').render();
+            });
+        });
 
+// Ниже приведен пример того как можно сделать то же самое, только без шаблонизации Classes 
+// такой способ вполне можно применять, если вам не нужно постоянно делать какую то верстку
+
+    // getResource('http://localhost:3000/menu')
+    //     .then(data => createCard(data));
+
+    // function createCard(data) {
+    //     data.forEach(({img, altimg, title, descr, price}) => {
+    //         const element = document.createElement('div');
+
+    //         element.classList.add('menu__item');
+
+    //         element.innerHTML = `
+    //             <img src=${img} alt=${altimg}>
+    //             <h3 class="menu__item-subtitle">${title}</h3>
+    //             <div class="menu__item-descr">${descr}</div>
+    //             <div class="menu__item-divider"></div>
+    //             <div class="menu__item-price">
+    //                 <div class="menu__item-cost">Цена:</div>
+    //                 <div class="menu__item-total"><span>${price}</span> руб/день</div>
+    //             </div>
+    //         `;
+
+    //         document.querySelector('.menu .container').append(element);
+    //     });
+    // }
+
+    
     //  ---------------------------------------  Forms to server
 
     // получаем формы с сайта
@@ -254,13 +275,31 @@ document.addEventListener('DOMContentLoaded', () => {
         failure: "Something went wrong..."
     };
 
-    // подвязываем функцию postData к каждой форме
+    // подвязываем функцию bindPostData к каждой форме
     forms.forEach(item => {
-        postData(item);
+        bindPostData(item);
     });
+    
+    // Создаем функционал для общения с сервером
+    // async await используются чтобы подождать ответа от сервера и он успел записаться в 
+    // переменную res прежде чем ее обрабатывать далее. 
+    // async ставится перед функцией
+    // await ставится перед теми операциями которые мы хотим дождаться
+
+    const postData = async (url, data) => {
+        const res = await fetch(url, {
+            method: "POST",
+            headers: {
+                'Content-type': 'application/json'
+            },
+            body: data
+        });
+
+        return await res.json();
+    };
 
     // создаем функцию которая обрабатывает форму и отправляет на сервер 
-    function postData(form) {
+    function bindPostData(form) {
         form.addEventListener('submit', (e) => {
             e.preventDefault();
 
@@ -275,29 +314,17 @@ document.addEventListener('DOMContentLoaded', () => {
             
             const formData = new FormData(form);
 
-            // переводим FormData в обычный объект, который переводим в JSON
-            const object = {};
-            formData.forEach(function(value, key) {
-                object[key] = value;
-            });
+            // переводим FormData массив массивов через entries, а затем обратно в объект через fromEntries
+            const json = JSON.stringify(Object.fromEntries(formData.entries()));
 
-            fetch('server.php', {
-                method: 'POST',
-                headers: {
-                    'Content-type': 'application/json'
-                },
-                body: JSON.stringify(object)
-            })
-            .then(data => data.text())
+            postData('http://localhost:3000/requests', json)
             .then(data => {
                 console.log(data);
                 showThanksModal(message.success);
                 statusMessage.remove();
-            })
-            .catch(() => {
+            }).catch(() => {
                 showThanksModal(message.failure);
-            })
-            .finally(() => {
+            }).finally(() => {
                 form.reset();
             });
         });
@@ -332,5 +359,7 @@ document.addEventListener('DOMContentLoaded', () => {
     fetch('http://localhost:3000/menu')
         .then(data => data.json())
         .then(res => console.log(res));
+
+    
 });
 
