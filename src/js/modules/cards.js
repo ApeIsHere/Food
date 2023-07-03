@@ -1,3 +1,5 @@
+import { getResource } from "../services/services";
+
 function cards() {
     
 //  ---------------------------------------  Classes for cards
@@ -58,39 +60,22 @@ class MenuCard {
 // нет необходимости помещать его в переменную, просто создаем, делаем нужные манипуляции и забываем про него
 
 
-// функция которая помещает данные на страницу из базы данных
-// fetch не реагирует на ошибки HTTP запросов 404, 500, 502 ...
-// обрабатываем в ручную
-// есть два свойства которые помогают в данном деле
-// .ok .status (200, 404, 500 ...)
-// нам понадобиться конструкция выбрасывающая новую ошибку throw new Error
-
-const getResource = async (url) => {
-    const res = await fetch(url);
-
-    if (!res.ok) {
-        throw new Error(`Couldn't fetch ${url}, status ${res.status}`);
-    }
-    
-    return await res.json();
-};
-
 // ({img, altimg ...}) это мы деструктуризуем объект вытаскиваем из него свойства
-// getResource('http://localhost:3000/menu')
-//     .then(data => {
-        // data.forEach(({img, altimg, title, descr, price}) => {
-        //     new MenuCard(img, altimg, title, descr, price, '.menu .container').render();
-        // });
-//     });
-
-// Делаем то же самое, только при помощи библиотеки axios и ее встроенных методов
-
-axios.get('http://localhost:3000/menu')
-    .then(data => {            
-        data.data.forEach(({img, altimg, title, descr, price}) => {
+getResource('http://localhost:3000/menu')
+    .then(data => {
+        data.forEach(({img, altimg, title, descr, price}) => {
             new MenuCard(img, altimg, title, descr, price, '.menu .container').render();
         });
     });
+
+// Делаем то же самое, только при помощи библиотеки axios и ее встроенных методов
+
+// axios.get('http://localhost:3000/menu')
+//     .then(data => {            
+//         data.data.forEach(({img, altimg, title, descr, price}) => {
+//             new MenuCard(img, altimg, title, descr, price, '.menu .container').render();
+//         });
+//     });
 
 // Ниже приведен пример того как можно сделать то же самое, только без шаблонизации Classes 
 // такой способ вполне можно применять, если нам не нужно постоянно делать какую то верстку
@@ -121,4 +106,4 @@ axios.get('http://localhost:3000/menu')
 
 }
 
-module.exports = cards;
+export default cards;

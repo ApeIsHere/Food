@@ -1,7 +1,6 @@
-function timer() {
+function timer(id, deadline) {
     // --------------------------------------- Timer
 
-    const deadline = '2023-08-10';
 
     // Вычисляет оставшееся время и возвращает объект с оставшимся временем
     function getTimeRemaining(endtime) {
@@ -32,13 +31,13 @@ function timer() {
     // по selector находим обертку для таймера внутри которой лежат следующие элементы
     function setClock(selector, endtime) {
         // в endtime передаем нашу дату deadline
-        const timer = document.querySelector(selector),
-            days = timer.querySelector('#days'),
-            hours = timer.querySelector('#hours'),
-            minutes = timer.querySelector('#minutes'),
-            seconds = timer.querySelector('#seconds'),
-            // запускаем функцию каждую секунду, чтобы обновлялся таймер на странице
-            timeInterval = setInterval(updateClock, 1000);
+        const   timer = document.querySelector(selector),
+                days = timer.querySelector('#days'),
+                hours = timer.querySelector('#hours'),
+                minutes = timer.querySelector('#minutes'),
+                seconds = timer.querySelector('#seconds'),
+                // запускаем функцию каждую секунду, чтобы обновлялся таймер на странице
+                timeInterval = setInterval(updateClock, 1000);
 
         // вызываем функцию чтобы не ждать 1000мс из timeInterval до первого вызова и избежать моргания при обновление страницы
         updateClock();
@@ -60,8 +59,8 @@ function timer() {
         }
     }
 
-    setClock('.timer', deadline);
+    setClock(id, deadline);
     
 }
 
-module.exports = timer;
+export default timer;
